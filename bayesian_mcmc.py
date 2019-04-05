@@ -69,7 +69,7 @@ def metro_bayes():
 		return x + 0.01*np.random.normal(size=4)
 
 	# initial guess unit normal
-	x0 = [0, 0, 1, 1]
+	x0 = np.array([0, 0, 1, 1])
 	k = 10000
 	m = np.row_stack(it.islice(
 		metropolis(log_pdf, sampler, x0),
@@ -78,11 +78,15 @@ def metro_bayes():
 	m = m[2000:,:]
 
 	# histogram the posterior distributions of the parameters.
-	names = ("\mu_0", "\mu_1", "\sigma_0", "\sigma_1")
+	names = ("${\mu_0}$", "${\mu_1}$", "${\sigma_0}$", "${\sigma_1}$")
+	true_vals = np.concatenate([mu, np.diag(sigma)])
 	for i in range(4):
 		plt.subplot(2, 2, i + 1)
 		plt.hist(m[:,i])
-		plt.xlabel(names[i])
+		plt.axvline(x=true_vals[i], color=(1,0,0))
+		# no idea why pyplot reverses these
+		plt.legend(["true value", "MCMC posterior"])
+		plt.xlabel(names[i], FontSize=16)
 		plt.ylabel("count")
 	plt.show()
 
