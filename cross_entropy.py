@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import matplotlib.pyplot as plt
 
 def cross_entropy_opt(np_random, eval_fn,
