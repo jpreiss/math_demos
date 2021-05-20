@@ -9,7 +9,6 @@ linear least-squares problem. SGD consumes less memory and runs faster for
 large problems if the rate is tuned correctly.
 """
 
-import multiprocessing.pool
 import time
 
 import numpy as np
@@ -61,9 +60,9 @@ def main():
     W_true = np.random.normal(size=(dim_in, dim_out))
     Y = (X @ W_true) + 0.1 * np.random.normal(size=(samples, dim_out))
 
-    # Compute the true least-squares solution in a separate process.
-    pool = multiprocessing.pool.Pool()
-    exact_result = pool.starmap_async(lstsq_exact, [(X, Y)])
+    # Compute the true least-squares solution.
+    time_lstsq, W_lstsq = lstsq_exact(X, Y)
+    err_lstsq = error(X, Y, W_lstsq)
 
     # Compute the SGD solution.
     time_sgd, Ws = lstsq_sgd(X, Y, rate, batch, iters)
@@ -73,10 +72,6 @@ def main():
     subsample = np.arange(0, iters + 1, 20)
     t = t[subsample]
     errors = [error(X, Y, Ws[i]) for i in subsample]
-
-    # Wait for the least-squares process to finish.
-    time_lstsq, W_lstsq = exact_result.get()[0]
-    err_lstsq = error(X, Y, W_lstsq)
 
     # Construct the plot.
     plt.rcParams["text.usetex"] = True
