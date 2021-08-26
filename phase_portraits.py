@@ -1,61 +1,63 @@
+"""Visualizes different behaviors of 2-dimensional linear dynamical systems."""
+
 import itertools as it
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-# roll out the linear dynamicx x' = Ax for T steps with time interval dt
 def rollout(A, x, T, dt):
-	out = np.zeros((T,) + x.shape)
-	out[0] = x
-	for t in range(1, T):
-		out[t] = out[t-1] + dt * A @ out[t-1]
-	return out
+    """rolls out linear dynamicx x' = Ax for T steps with time interval dt."""
+    out = np.zeros((T,) + x.shape)
+    out[0] = x
+    for t in range(1, T):
+        out[t] = out[t-1] + dt * A @ out[t-1]
+    return out
 
 
-# construct a 2x2 matrix with the given trace and determinant
 def trdet(tr, det):
-	a = d = tr / 2
-	bc = a*d - det
-	b = c = np.sqrt(np.abs(bc))
-	if bc < 0:
-		b = -b
-	return np.array([[a, b], [c, d]])
+    """Constructs a 2x2 matrix with the given trace and determinant."""
+    a = d = tr / 2
+    bc = a*d - det
+    b = c = np.sqrt(np.abs(bc))
+    if bc < 0:
+        b = -b
+    return np.array([[a, b], [c, d]])
 
 
 def main():
+    tiles = 7
+    points_per_tile = 200
+    integrate_steps = 400
+    integrate_dt = 0.01
 
-	tiles = 9
-	points = 80
-	steps = 200
-	dt = 0.01
-	traces = np.linspace(-2, 2, tiles)
-	determinants = np.linspace(-2, 2, tiles)
-	halfbox = (traces[1] - traces[0]) / 2.0
+    traces = np.linspace(-1, 1, tiles)
+    determinants = np.linspace(-1, 1, tiles)
+    halfbox = (traces[1] - traces[0]) / 2.0
 
-	plt.figure(figsize=(15, 15))
+    plt.figure(figsize=(10, 10), constrained_layout=True)
 
-	for tr, det in it.product(traces, determinants):
-		# create matrix, evaluate dynamics at random initial points
-		A = trdet(tr, det)
-		x0 = np.random.uniform(-halfbox, halfbox, size=(2, points))
-		x = rollout(A, x0, steps, dt)
+    for tr, det in it.product(traces, determinants):
+        # Create matrix and evaluate dynamics from random initial points.
+        A = trdet(tr, det)
+        x0 = np.random.uniform(-halfbox, halfbox, size=(2, points_per_tile))
+        x = rollout(A, x0, integrate_steps, integrate_dt)
 
-		# cut off points that escaped this tile's box
-		for i in range(points):
-			escaped = np.any(np.abs(x[:,:,i]) > halfbox, axis=1)
-			x[escaped,:,i] = np.nan
+        # Cut off points that escaped this tile's box.
+        for i in range(points_per_tile):
+            escaped = np.any(np.abs(x[:, :, i]) > halfbox, axis=1)
+            x[escaped, :, i] = np.nan
 
-		# plot many lines at once
-		color = [0.2, (tr+2)/5, (det+2)/5]
-		plt.plot(x[:,0,:] + tr, x[:,1,:] + det, color=color, linewidth=1)
+        # Plot many lines at once.
+        color = (0, 0, 0)
+        plt.plot(x[:, 0, :] + tr, x[:, 1, :] + det, color=color, linewidth=0.3)
 
-	plt.box(False)
-	plt.axis("equal")
-	plt.gca().set_xticks([])
-	plt.gca().set_yticks([])
-	plt.savefig("phaseportraits.pdf")
+    plt.box(False)
+    plt.axis("equal")
+    plt.gca().set_xticks([])
+    plt.gca().set_yticks([])
+    plt.savefig("phase_portraits.pdf")
 
 
 if __name__ == "__main__":
-	main()
+    main()
 
