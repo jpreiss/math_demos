@@ -21,7 +21,7 @@ class OGDPlot:
         self.xopts = np.zeros((T, 2))
         self.xs_plot = ax.plot([], [], label="$y_t$ (ALG)", color="black")[0]
         self.xopts_plot = ax.plot([], [], label="$y^\\star_t$", alpha=0.25, color="black")[0]
-        box = 1.6
+        box = 1.1
         ax.set(xlim=[-box, box], ylim=[-box, box])
         ax.axis("equal")
         sns.despine(ax=ax, bottom=True, left=True)
@@ -48,7 +48,8 @@ def main():
     xopts = np.zeros((2, T, 2))
 
     plt.rcParams["text.usetex"] = True
-    fig, axs = plt.subplots(1, 2, figsize=(8.0, 4.0), constrained_layout=True, dpi=200)
+    fig, axs = plt.subplots(1, 2, figsize=(7.0, 3.5), dpi=200)
+    fig.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=0.92, wspace=0.25)
     plots = [OGDPlot(ax, omega, T) for ax, omega in zip(axs, OMEGAS)]
     axs[0].set_title("slow-moving target")
     axs[1].set_title("fast-moving target")
