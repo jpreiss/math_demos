@@ -20,7 +20,9 @@ class OGDPlot:
         self.xs = np.zeros((T, 2))
         self.xopts = np.zeros((T, 2))
         self.xs_plot = ax.plot([], [], label="$y_t$ (ALG)", color="black")[0]
-        self.xopts_plot = ax.plot([], [], label="$y^\\star_t$", alpha=0.25, color="black")[0]
+        self.xopts_plot = ax.plot([], [], label="$y^\\star_t$", color="#BBB")[0]
+        self.x_plot = ax.plot([], [], marker=".", markersize=10, color="black")[0]
+        self.xopt_plot = ax.plot([], [], marker=".", markersize=10, color="#BBB")[0]
         box = 1.1
         ax.set(xlim=[-box, box], ylim=[-box, box])
         ax.axis("equal")
@@ -29,8 +31,6 @@ class OGDPlot:
         self.x = np.zeros(2)
 
     def step(self, i):
-        self.xs_plot.set_data(self.xs[:i, 0], self.xs[:i, 1])
-        self.xopts_plot.set_data(self.xopts[:i, 0], self.xopts[:i, 1])
         theta = self.omega * DT * i
         xopt = np.array([np.cos(theta), np.sin(theta)])
         x = self.x
@@ -38,6 +38,11 @@ class OGDPlot:
         self.xopts[i] = xopt
         grad = x - xopt
         self.x = x - DT * RATE * grad
+        self.x_plot.set_data([self.xs[i, 0]], [self.xs[i, 1]])
+        self.xopt_plot.set_data([self.xopts[i, 0]], [self.xopts[i, 1]])
+        i += 1
+        self.xs_plot.set_data(self.xs[:i, 0], self.xs[:i, 1])
+        self.xopts_plot.set_data(self.xopts[:i, 0], self.xopts[:i, 1])
 
 
 def main():
