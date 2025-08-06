@@ -15,7 +15,7 @@ PERIODS = np.array([6.0, 1.0])
 LAPS = 4
 FPS = 12
 DT = 1.0 / FPS
-BUF_SEC = 1.0
+BUF_SEC = 1.5
 BUF = int(BUF_SEC / DT)
 
 COLOR_X = [0, 0, 0, 1]
@@ -27,7 +27,6 @@ class DecayingTrace:
         self.segments = np.zeros((N, 2, 2))
         c1 = base_color[:3] + [0]
         cmap = LinearSegmentedColormap.from_list("", [base_color, c1])
-        self.cursor = 0
         self.lc = LineCollection(self.segments, cmap=cmap, **kwargs)
         self.lc.set_array(np.linspace(0, 1, N))
         self.init = False
@@ -46,10 +45,10 @@ class DecayingTrace:
 
 
 class OGDPlot:
-    def __init__(self, ax, omega):
+    def __init__(self, ax, omega, buf):
         self.omega = omega
-        self.xtrace = DecayingTrace(ax, BUF, COLOR_X)
-        self.xopttrace = DecayingTrace(ax, BUF, COLOR_XOPT)
+        self.xtrace = DecayingTrace(ax, buf, COLOR_X)
+        self.xopttrace = DecayingTrace(ax, buf, COLOR_XOPT)
 
         self.x_plot = ax.plot([], [], marker=".", markersize=10, color=COLOR_X)[0]
         self.xopt_plot = ax.plot([], [], marker=".", markersize=10, color=COLOR_XOPT)[0]
@@ -84,7 +83,11 @@ def main():
     plt.rcParams["text.usetex"] = True
     fig, axs = plt.subplots(1, 2, figsize=(7.0, 3.5), dpi=200)
     fig.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=0.92, wspace=0.25)
-    plots = [OGDPlot(ax, omega) for ax, omega in zip(axs, OMEGAS)]
+    buflens = [BUF, BUF // 2]
+    plots = [
+        OGDPlot(ax, omega, buf)
+        for ax, omega, buf in zip(axs, OMEGAS, buflens)
+    ]
     axs[0].set_title("slow-moving target")
     axs[1].set_title("fast-moving target")
 
