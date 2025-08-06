@@ -1,6 +1,7 @@
 """Illustrate how online gradient descent handles nonstationary environments."""
 
 import matplotlib.animation
+from matplotlib.lines import Line2D
 from matplotlib.collections import LineCollection
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
@@ -17,18 +18,15 @@ DT = 1.0 / FPS
 BUF_SEC = 1.0
 BUF = int(BUF_SEC / DT)
 
-COLOR_X = 0.0
-COLOR_XOPT = 0.7
+COLOR_X = [0, 0, 0, 1]
+COLOR_XOPT = [0.7, 0.7, 0.7, 1]
 
 
 class DecayingTrace:
     def __init__(self, ax, N, base_color, **kwargs):
         self.segments = np.zeros((N, 2, 2))
-        self.segments[:, 1, 1] = 1
-        bc = base_color
-        c0 = [bc, bc, bc, 1]
-        c1 = [bc, bc, bc, 0]
-        cmap = LinearSegmentedColormap.from_list("", [c0, c1])
+        c1 = base_color[:3] + [0]
+        cmap = LinearSegmentedColormap.from_list("", [base_color, c1])
         self.cursor = 0
         self.lc = LineCollection(self.segments, cmap=cmap, **kwargs)
         self.lc.set_array(np.linspace(0, 1, N))
@@ -50,11 +48,11 @@ class DecayingTrace:
 class OGDPlot:
     def __init__(self, ax, omega):
         self.omega = omega
-        self.xtrace = DecayingTrace(ax, BUF, COLOR_X, label="$y_t$ (ALG)")
-        self.xopttrace = DecayingTrace(ax, BUF, COLOR_XOPT, label="$y^\\star_t$")
+        self.xtrace = DecayingTrace(ax, BUF, COLOR_X)
+        self.xopttrace = DecayingTrace(ax, BUF, COLOR_XOPT)
 
-        self.x_plot = ax.plot([], [], marker=".", markersize=10, color="black")[0]
-        self.xopt_plot = ax.plot([], [], marker=".", markersize=10, color="gray")[0]
+        self.x_plot = ax.plot([], [], marker=".", markersize=10, color=COLOR_X)[0]
+        self.xopt_plot = ax.plot([], [], marker=".", markersize=10, color=COLOR_XOPT)[0]
 
         ax.axis("equal")
         sns.despine(ax=ax, bottom=True, left=True)
@@ -68,8 +66,6 @@ class OGDPlot:
         xopt = np.array([np.cos(theta), np.sin(theta)])
         grad = self.x - xopt
         self.x = self.x - DT * RATE * grad
-        print(self.x)
-        print(xopt)
         self.x_plot.set_data([self.x[0]], [self.x[1]])
         self.xopt_plot.set_data([xopt[0]], [xopt[1]])
         self.xtrace.step(self.x)
@@ -92,16 +88,18 @@ def main():
     axs[0].set_title("slow-moving target")
     axs[1].set_title("fast-moving target")
 
-    # move legend to in-between
-    axs[0].legend()
-    legend = axs[0].get_legend_handles_labels()
-    fig.legend(*legend, loc='upper center', fontsize="large")
+    # legend in-between, and we need to rebuild the lines because the
+    # colormapped LineCollection legends don't work.
+    handles = [
+        Line2D([0], [0], color=COLOR_X, label="$x_t$ (OGD)"),
+        Line2D([0], [0], color=COLOR_XOPT, label="$x^\\star_t$"),
+    ]
+    fig.legend(handles=handles, loc='upper center', fontsize="large")
     fig.text(
         0.5, 0.8,
-        "$f_t(y_t) = \\|y_t - y^\\star_t\\|_2^2$",
+        "$f_t(x_t) = \\|x_t - x^\\star_t\\|_2^2$",
         ha="center", va="top", fontsize="large",
     )
-    axs[0].get_legend().remove()
 
     writer = matplotlib.animation.FFMpegWriter(fps=FPS, bitrate=100*FPS)
     writer.setup(fig, "ogd.mp4")
