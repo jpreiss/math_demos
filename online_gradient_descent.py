@@ -9,35 +9,21 @@ import numpy as np
 import seaborn as sns
 
 
-def project(x):
-    return np.clip(x, -1, 1)
+# Use continuous time so we can tweak at low FPS then render at high FPS.
+RATE = 1.0
+PERIOD = 6.0
+LAPS = 2
+FPS = 4
+DT = 1.0 / FPS
 
 
-def oracle(x, xopt):
-    return 0.5 * np.sum((x - xopt)**2), x - xopt
-
-
-def rot2d(theta):
-    c = np.cos(theta)
-    s = np.sin(theta)
-    R = np.array([
-        [c, -s],
-        [s,  c]
-    ])
-    return R
-
-
-def main(fast, slow, outpath):
-    T = 200
+def main():
+    T = int(FPS * LAPS * PERIOD)
+    OMEGA = 2 * np.pi / PERIOD
     x = np.zeros(2)
-    #xopt = np.zeros(2)
 
     xs = np.zeros((T, 2))
     xopts = np.zeros((T, 2))
-
-    diameter = 2 * np.sqrt(2)
-    lipschitz = 2 * np.sqrt(2)
-    eta = diameter / (lipschitz * np.sqrt(T))
 
     plt.rcParams["text.usetex"] = True
     fig, ax = plt.subplots(1, 1, figsize=(4.0, 4.0), dpi=200)
@@ -45,19 +31,14 @@ def main(fast, slow, outpath):
     x_trace, = ax.plot([], [], label="$y_t$ (ALG)", color="black")
     ax.legend()
     ax.set_title("$h_t(y) = \\|y - y^\\star_t\\|_2^2$")
-    box = 1.75
+    box = 1.5
     ax.set(xlim=[-box, box], ylim=[-box, box])
     ax.axis("equal")
     sns.despine(ax=ax, bottom=True, left=True)
     ax.set(xticks=[], yticks=[])
 
-    writer = matplotlib.animation.FFMpegWriter(fps=24, bitrate=4000)
-    writer.setup(fig, outpath)
-
-    opt_slow = np.array([1, 0])
-    opt_fast = np.array([0.25, 0])
-    R_slow = rot2d(slow)
-    R_fast = rot2d(fast)
+    writer = matplotlib.animation.FFMpegWriter(fps=FPS, bitrate=100*FPS)
+    writer.setup(fig, "ogd.mp4")
 
     for i in range(T):
         x_trace.set_data(xs[:i, 0], xs[:i, 1])
@@ -65,20 +46,16 @@ def main(fast, slow, outpath):
         writer.grab_frame()
         plt.show(block=False)
         plt.pause(1e-2)
-        xopt = opt_slow + opt_fast
-        opt_slow = R_slow @ opt_slow
-        opt_fast = R_fast @ opt_fast
-        #xopt = xopt + 0.1 * np.random.normal(size=2)
-        #xopt = project(xopt)
+
+        theta = OMEGA * DT * i
+        xopt = np.array([np.cos(theta), np.sin(theta)])
         xs[i] = x
         xopts[i] = xopt
-        _, grad = oracle(x, xopt)
-        x = project(x - eta * grad)
+        grad = x - xopt
+        x = x - DT * RATE * grad
 
     writer.finish()
 
+
 if __name__ == "__main__":
-    fast = float(sys.argv[1])
-    slow = float(sys.argv[2])
-    outpath = sys.argv[3]
-    main(fast, slow, outpath)
+    main()
