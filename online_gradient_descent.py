@@ -39,11 +39,13 @@ def main(fast, slow, outpath):
     lipschitz = 2 * np.sqrt(2)
     eta = diameter / (lipschitz * np.sqrt(T))
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 5), dpi=200)
-    opt_trace, = ax.plot([], [], label="opt", alpha=0.25, color="black")
-    x_trace, = ax.plot([], [], label="alg", color="black")
+    plt.rcParams["text.usetex"] = True
+    fig, ax = plt.subplots(1, 1, figsize=(4.0, 4.0), dpi=200)
+    opt_trace, = ax.plot([], [], label="$y^\\star_t$", alpha=0.25, color="black")
+    x_trace, = ax.plot([], [], label="$y_t$ (ALG)", color="black")
     ax.legend()
-    box = 1.5
+    ax.set_title("$h_t(y) = \\|y - y^\\star_t\\|_2^2$")
+    box = 1.75
     ax.set(xlim=[-box, box], ylim=[-box, box])
     ax.axis("equal")
     sns.despine(ax=ax, bottom=True, left=True)
