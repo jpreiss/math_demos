@@ -10,16 +10,21 @@ import seaborn as sns
 
 
 # Use continuous time so we can tweak at low FPS then render at high FPS.
+
+# cts-time setup
 RATE = 2.0
 PERIODS = np.array([6.0, 1.0])
-LAPS = 4
-FPS = 12
-DT = 1.0 / FPS
+LAPS = 2
 BUF_SEC = 1.5
-BUF = int(BUF_SEC / DT)
-
 COLOR_X = [0, 0, 0, 1]
 COLOR_XOPT = [0.7, 0.7, 0.7, 1]
+
+# discretization
+SCENE_FPS = 240
+SKIP = 16
+DT = 1.0 / SCENE_FPS
+VIDEO_FPS = SCENE_FPS / SKIP
+BUF = int(BUF_SEC / DT)
 
 
 class DecayingTrace:
@@ -32,7 +37,7 @@ class DecayingTrace:
         self.init = False
         self.lc = ax.add_collection(self.lc)
 
-    def step(self, x):
+    def step(self, x, render):
         if not self.init:
             self.segments[:, :, :] = x[None, None, :]
             self.init = True
@@ -40,8 +45,9 @@ class DecayingTrace:
             self.segments = np.roll(self.segments, 1, axis=0)
             self.segments[0, 0, :] = self.segments[1, 1, :]
             self.segments[0, 1, :] = x
-        self.lc.set_segments(self.segments)
-        self.lc.changed()
+        if render:
+            self.lc.set_segments(self.segments)
+            self.lc.changed()
 
 
 class OGDPlot:
@@ -60,21 +66,21 @@ class OGDPlot:
 
         self.ax = ax
 
-    def step(self, i):
+    def step(self, i, render):
         theta = self.omega * DT * i
         xopt = np.array([np.cos(theta), np.sin(theta)])
         grad = self.x - xopt
         self.x = self.x - DT * RATE * grad
         self.x_plot.set_data([self.x[0]], [self.x[1]])
         self.xopt_plot.set_data([xopt[0]], [xopt[1]])
-        self.xtrace.step(self.x)
-        self.xopttrace.step(xopt)
+        self.xtrace.step(self.x, render)
+        self.xopttrace.step(xopt, render)
         box = 1.1
         self.ax.set(xlim=[-box, box], ylim=[-box, box])
 
 
 def main():
-    T = int(FPS * LAPS * PERIODS[0]) + 1
+    T = int(SCENE_FPS * LAPS * PERIODS[0]) + 1
     OMEGAS = 2 * np.pi / PERIODS
 
     xs = np.zeros((2, T, 2))
@@ -104,16 +110,18 @@ def main():
         ha="center", va="top", fontsize="large",
     )
 
-    writer = matplotlib.animation.FFMpegWriter(fps=FPS, bitrate=100*FPS)
+    writer = matplotlib.animation.FFMpegWriter(fps=VIDEO_FPS, bitrate=100*VIDEO_FPS)
     writer.setup(fig, "ogd.mp4")
 
     for i in range(T):
+        render = (i % SKIP) == 0
         for plot in plots:
-            plot.step(i)
-        writer.grab_frame()
-        if FPS < 60:
-            plt.show(block=False)
-            plt.pause(1e-2)
+            plot.step(i, render)
+        if render:
+            writer.grab_frame()
+            if VIDEO_FPS < 60:
+                plt.show(block=False)
+                plt.pause(1e-2)
 
     writer.finish()
 
